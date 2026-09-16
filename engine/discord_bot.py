@@ -2285,11 +2285,13 @@ class DiscordVoiceBot:
             self._refresh_voice_channels_internal()
             self._notify_status("ONLINE", bot_name)
 
-            # Sync slash commands (/) across all guilds for instant availability
+            # Sync per-guild first (commands must still be in the tree),
+            # then clear old global commands to remove any duplicates from previous global sync
             try:
                 for guild in self.client.guilds:
                     self.client.tree.copy_global_to(guild=guild)
                     await self.client.tree.sync(guild=guild)
+                self.client.tree.clear_commands(guild=None)
                 await self.client.tree.sync()
                 logger.info("Slash commands (/) synced successfully to all servers!")
             except Exception as e:
