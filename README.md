@@ -101,6 +101,50 @@ python main.py
 python main.py --daemon
 ```
 
+### Linux / macOS
+
+#### Prerequisites
+- Python 3.10+
+- `ffmpeg` and `libopus` (Linux only — macOS installs them via pip automatically)
+
+```bash
+# Ubuntu / Debian
+sudo apt update && sudo apt install -y python3 python3-pip python3-venv ffmpeg libopus0 libopus-dev
+
+# macOS (Homebrew)
+brew install python ffmpeg
+```
+
+#### Quick Start (Local Direct Stream Mode)
+For running on a local Mac (instant playback, zero download wait time, no cookies required):
+```bash
+./run_local.sh
+```
+
+#### Quick Start (Standard Server Mode)
+```bash
+./run.sh
+```
+
+> Both scripts automatically create a virtual environment and install dependencies on the first run.
+
+#### Manual Setup
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Save bot token
+python3 main.py --set-token "YOUR_BOT_TOKEN"
+
+# Run in local direct streaming mode (zero-download)
+python3 main.py --local
+
+# Or run in standard mode / daemon mode
+python3 main.py
+python3 main.py --daemon
+```
+
 ### Linux (Ubuntu / Debian / AWS EC2)
 
 #### 1. System Dependencies
@@ -204,8 +248,11 @@ woeyyy-discord-bot/
 ├── main.py                 # Primary entry point
 ├── requirements.txt        # Python package dependencies
 ├── run.bat                 # Windows setup and launcher script
+├── run.sh                  # Linux/macOS setup and launcher script
 ├── run_bot.bat             # Windows launcher script
+├── run_bot.sh              # Linux/macOS launcher script
 ├── run_local.bat           # Windows local streaming launcher script (zero-download)
+├── run_local.sh            # Linux/macOS local streaming launcher script (zero-download)
 ├── woeyyy-bot.service      # Systemd service unit definition
 ├── KNOWN_ISSUES.md         # Environment limitations and known issues
 └── README.md
