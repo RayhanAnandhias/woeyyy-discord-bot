@@ -47,15 +47,46 @@ logger = get_logger("DiscordBot")
 
 
 def ensure_opus_loaded() -> bool:
-    """Ensure libopus C-library is loaded into discord.opus for voice streaming."""
+    """Ensure modern libopus C-library is loaded into discord.opus for voice streaming."""
     if discord.opus.is_loaded():
-        return True
+        try:
+            ver = discord.opus._lib.opus_get_version_string().decode("utf-8", errors="ignore")
+            if any(f"1.{m}" in ver for m in ("4", "5", "6", "7", "8", "9")):
+                return True
+        except Exception:
+            return True
+
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    bin_dir = os.path.join(project_root, "bin")
+
+    bundled_libs = []
+    if sys.platform == "win32":
+        bundled_libs.append(os.path.join(bin_dir, "libopus-0.x64.dll"))
+    elif sys.platform.startswith("linux"):
+        import platform
+        arch = platform.machine().lower()
+        if arch in ("aarch64", "arm64"):
+            bundled_libs.append(os.path.join(bin_dir, "libopus-linux-arm64.so"))
+        elif arch in ("x86_64", "amd64"):
+            bundled_libs.append(os.path.join(bin_dir, "libopus-linux-x64.so"))
+    elif sys.platform == "darwin":
+        import platform
+        arch = platform.machine().lower()
+        if arch in ("arm64", "aarch64"):
+            bundled_libs.append(os.path.join(bin_dir, "libopus-osx-arm64.dylib"))
+        elif arch in ("x86_64", "amd64"):
+            bundled_libs.append(os.path.join(bin_dir, "libopus-osx-x64.dylib"))
 
     discord_dir = os.path.dirname(discord.__file__)
     possible_locations = [
+        *bundled_libs,
+        "/opt/homebrew/lib/libopus.dylib",
+        "/usr/local/lib/libopus.dylib",
+        "libopus.dylib",
         "libopus.so.0",
         "libopus.so",
         "/usr/lib/x86_64-linux-gnu/libopus.so.0",
+        "/usr/lib/aarch64-linux-gnu/libopus.so.0",
         "/usr/lib/libopus.so.0",
         "/usr/local/lib/libopus.so",
         os.path.join(discord_dir, "bin", "libopus-0.x64.dll"),
@@ -68,12 +99,19 @@ def ensure_opus_loaded() -> bool:
     import ctypes.util
     found_lib = ctypes.util.find_library("opus")
     if found_lib:
-        possible_locations.insert(0, found_lib)
+        possible_locations.append(found_lib)
 
     for loc in possible_locations:
+        if os.path.isabs(loc) and not os.path.exists(loc):
+            continue
         try:
             discord.opus.load_opus(loc)
             if discord.opus.is_loaded():
+                try:
+                    ver = discord.opus._lib.opus_get_version_string().decode("utf-8", errors="ignore")
+                    logger.info(f"Loaded libopus from {loc} ({ver})")
+                except Exception:
+                    pass
                 return True
         except Exception:
             pass
@@ -82,6 +120,10 @@ def ensure_opus_loaded() -> bool:
         return discord.opus._load_default()
     except Exception:
         return False
+
+
+# Eagerly load modern libopus at module import time
+ensure_opus_loaded()
 
 
 def get_ffmpeg_binary() -> str:

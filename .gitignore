@@ -5,6 +5,7 @@ __pycache__/
 
 # C extensions
 *.so
+!bin/*.so
 
 # Distribution / packaging
 .Python
@@ -183,4 +184,4 @@ cache/
 # Operating system
 .DS_Store
 Thumbs.db
-
+
